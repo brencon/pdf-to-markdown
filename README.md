@@ -31,7 +31,7 @@ A comprehensive, enterprise-grade solution for transforming PDF files into well-
 
 ### Install from source
 ```bash
-git clone https://github.com/yourusername/pdf-to-markdown
+git clone https://github.com/brencon/pdf-to-markdown.git
 cd pdf-to-markdown
 pip install -e .
 ```

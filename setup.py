@@ -10,7 +10,7 @@ setup(
     description="Enterprise-grade PDF to Markdown converter with intelligent content organization",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/yourusername/pdf-to-markdown-enterprise",
+    url="https://github.com/brencon/pdf-to-markdown",
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     classifiers=[
