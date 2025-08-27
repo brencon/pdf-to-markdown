@@ -90,7 +90,7 @@ def convert(pdf_path: Path, output_dir: Path, config: Path,
         
         # Success message
         console.print(Panel.fit(
-            f"[bold green]✓ Conversion successful![/bold green]\n"
+            f"[bold green]Conversion successful![/bold green]\n"
             f"Output saved to: [cyan]{output_dir}[/cyan]\n"
             f"Main file: [cyan]{result_path}[/cyan]",
             border_style="green"
@@ -98,7 +98,7 @@ def convert(pdf_path: Path, output_dir: Path, config: Path,
         
     except Exception as e:
         console.print(Panel.fit(
-            f"[bold red]✗ Conversion failed![/bold red]\n"
+            f"[bold red]Conversion failed![/bold red]\n"
             f"Error: {str(e)}",
             border_style="red"
         ))

@@ -2,6 +2,7 @@ import logging
 from typing import List, Dict, Any, Optional, Tuple
 import re
 from dataclasses import dataclass
+from pathlib import Path
 from pygments.lexers import get_lexer_by_name, guess_lexer
 from pygments.util import ClassNotFound
 

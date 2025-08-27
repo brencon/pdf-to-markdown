@@ -22,7 +22,8 @@ class MarkdownGenerator:
     def generate_document(self, document_node: Any, output_dir: Path, 
                          image_paths: Dict[Any, Path] = None,
                          table_paths: Dict[Any, Dict[str, Path]] = None,
-                         code_paths: Dict[Any, Path] = None) -> Path:
+                         code_paths: Dict[Any, Path] = None,
+                         output_filename: str = None) -> Path:
         """Generate complete Markdown document from document structure"""
         
         # Create output directory
@@ -32,7 +33,7 @@ class MarkdownGenerator:
         self._generate_section_files(document_node, output_dir, image_paths, table_paths, code_paths)
         
         # Generate main index/README
-        index_path = self._generate_index(document_node, output_dir)
+        index_path = self._generate_index(document_node, output_dir, output_filename)
         
         return index_path
     
@@ -128,7 +129,7 @@ class MarkdownGenerator:
         section_file.write_text('\n'.join(content), encoding='utf-8')
         logger.info(f"Generated section file: {section_file}")
     
-    def _generate_index(self, root_node: Any, output_dir: Path) -> Path:
+    def _generate_index(self, root_node: Any, output_dir: Path, output_filename: str = None) -> Path:
         """Generate main index/README file"""
         content = []
         
@@ -136,25 +137,41 @@ class MarkdownGenerator:
         content.append("# Document Index")
         content.append("")
         
-        # Generate table of contents
-        content.append("## Table of Contents")
-        content.append("")
+        # Add root content if it exists (for documents without sections)
+        if hasattr(root_node, 'content') and root_node.content:
+            content.append("## Document Content")
+            content.append("")
+            for block in root_node.content:
+                if hasattr(block, 'block_type'):
+                    if block.block_type in ['paragraph', 'text']:
+                        content.append(self._format_paragraph(block.content))
+                        content.append("")
+                    elif block.block_type == 'list':
+                        content.append(self._format_list(block.content))
+                        content.append("")
+            content.append("")
         
-        def generate_toc(node: Any, indent: int = 0):
-            if hasattr(node, 'node_type') and node.node_type == 'root':
-                for child in node.children:
-                    generate_toc(child, indent)
-            else:
-                # Create link
-                link_path = f"{node.slug}/index.md"
-                indent_str = "  " * indent
-                content.append(f"{indent_str}- [{node.title}]({link_path})")
-                
-                # Add children
-                for child in node.children:
-                    generate_toc(child, indent + 1)
+        # Generate table of contents only if there are children
+        if hasattr(root_node, 'children') and root_node.children:
+            content.append("## Table of Contents")
+            content.append("")
+            
+            def generate_toc(node: Any, indent: int = 0):
+                if hasattr(node, 'node_type') and node.node_type == 'root':
+                    for child in node.children:
+                        generate_toc(child, indent)
+                else:
+                    # Create link
+                    link_path = f"{node.slug}/index.md"
+                    indent_str = "  " * indent
+                    content.append(f"{indent_str}- [{node.title}]({link_path})")
                     
-        generate_toc(root_node)
+                    # Add children
+                    for child in node.children:
+                        generate_toc(child, indent + 1)
+                        
+            generate_toc(root_node)
+            content.append("")
         
         # Add document statistics
         content.append("")
@@ -168,8 +185,12 @@ class MarkdownGenerator:
         content.append(f"- Tables: {stats['tables']}")
         content.append(f"- Code blocks: {stats['code_blocks']}")
         
-        # Write index file
-        index_file = output_dir / "README.md"
+        # Write index file - use PDF filename if provided, otherwise README.md
+        if output_filename:
+            index_file = output_dir / f"{output_filename}.md"
+        else:
+            index_file = output_dir / "README.md"
+        
         index_file.write_text('\n'.join(content), encoding='utf-8')
         
         logger.info(f"Generated index file: {index_file}")

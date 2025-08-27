@@ -97,7 +97,8 @@ class PDFToMarkdownConverter:
         index_path = self._generate_markdown(
             document_structure, 
             output_dir,
-            asset_paths
+            asset_paths,
+            pdf_path.stem  # Pass the PDF filename without extension
         )
         
         # Step 6: Create metadata file
@@ -205,14 +206,15 @@ class PDFToMarkdownConverter:
         return asset_paths
     
     def _generate_markdown(self, document_structure: Any, output_dir: Path, 
-                          asset_paths: Dict[str, Any]) -> Path:
+                          asset_paths: Dict[str, Any], pdf_basename: str = None) -> Path:
         """Generate Markdown files"""
         return self.markdown_generator.generate_document(
             document_structure,
             output_dir,
             asset_paths.get('images'),
             asset_paths.get('tables'),
-            asset_paths.get('code')
+            asset_paths.get('code'),
+            output_filename=pdf_basename
         )
     
     def _create_metadata(self, pdf_path: Path, output_dir: Path, 

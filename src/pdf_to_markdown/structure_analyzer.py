@@ -56,13 +56,23 @@ class DocumentStructureAnalyzer:
         if toc:
             hierarchy = self._merge_with_toc(hierarchy, toc)
             
-        # Assign content to sections
-        self._assign_content_to_sections(hierarchy, text_blocks, images, tables, code_blocks)
-        
-        # Optimize structure
-        hierarchy = self._optimize_structure(hierarchy)
-        
-        root.children = hierarchy
+        # If no hierarchy was found, put content directly in root
+        if not hierarchy:
+            # Assign all content directly to root
+            for block in text_blocks:
+                root.content.append(block)
+            for img in (images or []):
+                root.content.append(img)
+            for table in (tables or []):
+                root.content.append(table)
+            for code in (code_blocks or []):
+                root.content.append(code)
+        else:
+            # Assign content to sections
+            self._assign_content_to_sections(hierarchy, text_blocks, images, tables, code_blocks)
+            # Optimize structure
+            hierarchy = self._optimize_structure(hierarchy)
+            root.children = hierarchy
         
         return root
     
@@ -183,6 +193,9 @@ class DocumentStructureAnalyzer:
                 node = self._find_section_for_page(all_nodes, page_num)
                 if node:
                     node.content.append(block)
+                elif not all_nodes and hierarchy:
+                    # If no sections exist, add to root
+                    hierarchy[0].content.append(block) if hierarchy else None
                     
         # Assign images
         if images:
@@ -324,7 +337,7 @@ class DocumentStructureAnalyzer:
                 return node
         return nodes[-1] if nodes else None
     
-    def generate_folder_structure(self, root: DocumentNode, base_path: Path) -> Dict[DocumentNode, Path]:
+    def generate_folder_structure(self, root: DocumentNode, base_path: Path) -> Dict[str, Path]:
         """Generate folder structure based on document hierarchy"""
         paths = {}
         
@@ -334,10 +347,10 @@ class DocumentStructureAnalyzer:
                 folder_name = f"{depth:02d}_{node.slug}"
                 node_path = parent_path / folder_name
                 node_path.mkdir(parents=True, exist_ok=True)
-                paths[node] = node_path
+                paths[id(node)] = node_path
             else:
                 node_path = parent_path
-                paths[node] = node_path
+                paths[id(node)] = node_path
                 
             # Create subfolders for children
             for i, child in enumerate(node.children):
