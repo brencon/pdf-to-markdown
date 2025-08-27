@@ -86,7 +86,7 @@ class MarkdownGenerator:
                     
             elif block_type == 'ExtractedImage' and image_paths:
                 # Image
-                img_path = image_paths.get(block)
+                img_path = image_paths.get(id(block))
                 if img_path:
                     img_md = self._format_image(img_path, section_dir, block)
                     content.append(img_md)
@@ -94,7 +94,7 @@ class MarkdownGenerator:
                     
             elif block_type == 'ExtractedTable' and table_paths:
                 # Table
-                paths = table_paths.get(block, {})
+                paths = table_paths.get(id(block), {})
                 if 'markdown' in paths:
                     table_content = paths['markdown'].read_text(encoding='utf-8')
                     content.append(table_content)
@@ -105,7 +105,7 @@ class MarkdownGenerator:
                 
             elif block_type == 'CodeBlock' and code_paths:
                 # Code block
-                code_path = code_paths.get(block)
+                code_path = code_paths.get(id(block))
                 code_md = self._format_code_block(block, code_path, section_dir)
                 content.append(code_md)
                 content.append("")
@@ -263,11 +263,18 @@ class MarkdownGenerator:
     
     def _format_image(self, img_path: Path, base_dir: Path, image_obj: Any) -> str:
         """Format image reference in Markdown"""
-        # Calculate relative path
+        # Calculate relative path from the markdown file to the image
         try:
-            rel_path = img_path.relative_to(base_dir)
+            # Get the relative path from the base directory to the image
+            rel_path = img_path.relative_to(base_dir.parent) if base_dir.parent != base_dir else img_path.relative_to(base_dir)
+            # Convert to forward slashes for markdown compatibility
+            rel_path_str = str(rel_path).replace('\\', '/')
+            # Add ../ if needed to go up from subfolder
+            if base_dir != base_dir.parent:
+                rel_path_str = f"../{rel_path_str}"
         except ValueError:
-            rel_path = img_path
+            # If relative path fails, use absolute path
+            rel_path_str = str(img_path).replace('\\', '/')
             
         # Get alt text
         alt_text = getattr(image_obj, 'alt_text', None) or getattr(image_obj, 'caption', None) or "Image"
@@ -275,9 +282,9 @@ class MarkdownGenerator:
         # Format based on style
         if self.image_format == 'embedded':
             # Embed as base64 (not implemented for brevity)
-            return f"![{alt_text}]({rel_path})"
+            return f"![{alt_text}]({rel_path_str})"
         else:
-            return f"![{alt_text}]({rel_path})"
+            return f"![{alt_text}]({rel_path_str})"
     
     def _format_table(self, table_obj: Any) -> str:
         """Format table in Markdown"""

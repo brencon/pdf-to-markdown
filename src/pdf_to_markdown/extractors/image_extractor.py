@@ -288,7 +288,7 @@ class ImageExtractor:
         return False
     
     def save_images(self, images: List[ExtractedImage], output_dir: Path, 
-                    naming_pattern: str = "image_{page:03d}_{index:03d}") -> Dict[ExtractedImage, Path]:
+                    naming_pattern: str = "image_{page:03d}_{index:03d}") -> Dict[str, Path]:
         """Save extracted images to disk"""
         output_dir.mkdir(parents=True, exist_ok=True)
         saved_paths = {}
@@ -310,7 +310,7 @@ class ImageExtractor:
             
             # Save image
             filepath.write_bytes(img.image_data)
-            saved_paths[img] = filepath
+            saved_paths[id(img)] = filepath
             
             logger.info(f"Saved image to {filepath}")
             

@@ -20,7 +20,7 @@ class ConversionConfig:
     # Image extraction settings
     min_image_width: int = 50
     min_image_height: int = 50
-    extract_inline_images: bool = True
+    extract_inline_images: bool = False
     detect_duplicate_images: bool = True
     image_output_format: str = 'png'  # png, jpg, webp
     image_quality: int = 95

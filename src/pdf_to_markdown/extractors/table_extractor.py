@@ -265,7 +265,7 @@ class TableExtractor:
         return '\n'.join(lines)
     
     def export_tables(self, tables: List[ExtractedTable], output_dir: Path, 
-                     formats: List[str] = ['csv', 'json', 'markdown']) -> Dict[ExtractedTable, Dict[str, Path]]:
+                     formats: List[str] = ['csv', 'json', 'markdown']) -> Dict[str, Dict[str, Path]]:
         """Export tables to various formats"""
         output_dir.mkdir(parents=True, exist_ok=True)
         exported_paths = {}
@@ -295,6 +295,6 @@ class TableExtractor:
                 table.data.to_excel(excel_path, index=False)
                 paths['excel'] = excel_path
                 
-            exported_paths[table] = paths
+            exported_paths[id(table)] = paths
             
         return exported_paths

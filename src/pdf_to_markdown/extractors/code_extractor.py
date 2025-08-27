@@ -325,7 +325,7 @@ class CodeBlockExtractor:
             
         return content
     
-    def export_code_blocks(self, code_blocks: List[CodeBlock], output_dir: Path) -> Dict[CodeBlock, Path]:
+    def export_code_blocks(self, code_blocks: List[CodeBlock], output_dir: Path) -> Dict[str, Path]:
         """Export code blocks to separate files"""
         output_dir.mkdir(parents=True, exist_ok=True)
         exported_paths = {}
@@ -370,7 +370,7 @@ class CodeBlockExtractor:
             
             # Write code to file
             filepath.write_text(block.content, encoding='utf-8')
-            exported_paths[block] = filepath
+            exported_paths[id(block)] = filepath
             
             logger.info(f"Exported {block.block_type} code block to {filepath}")
             
