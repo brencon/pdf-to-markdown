@@ -49,6 +49,7 @@ class ConversionConfig:
     table_alignment: str = 'left'  # left, center, right
     max_line_length: Optional[int] = 100
     image_link_style: str = 'relative'  # relative, absolute, embedded
+    use_html_images: bool = False  # Use HTML tags for better image formatting
     
     # Output settings
     create_folder_structure: bool = True

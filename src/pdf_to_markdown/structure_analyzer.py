@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 import re
 from pathlib import Path
 from slugify import slugify
+from pdf_to_markdown.extractors.content_merger import ContentMerger, ContentBlock
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +47,10 @@ class DocumentStructureAnalyzer:
         # Create root node
         root = DocumentNode("Document", level=0, node_type="root")
         
+        # Merge content in reading order
+        content_merger = ContentMerger()
+        merged_content = content_merger.merge_content(text_blocks, images, tables)
+        
         # Detect table of contents if present
         toc = self._detect_table_of_contents(text_blocks)
         
@@ -56,20 +61,16 @@ class DocumentStructureAnalyzer:
         if toc:
             hierarchy = self._merge_with_toc(hierarchy, toc)
             
-        # If no hierarchy was found, put content directly in root
+        # If no hierarchy was found, put merged content directly in root
         if not hierarchy:
-            # Assign all content directly to root
-            for block in text_blocks:
-                root.content.append(block)
-            for img in (images or []):
-                root.content.append(img)
-            for table in (tables or []):
-                root.content.append(table)
+            # Assign merged content directly to root in reading order
+            root.content = merged_content
+            # Add code blocks separately as they're detected from text
             for code in (code_blocks or []):
                 root.content.append(code)
         else:
-            # Assign content to sections
-            self._assign_content_to_sections(hierarchy, text_blocks, images, tables, code_blocks)
+            # Assign merged content to sections
+            self._assign_merged_content_to_sections(hierarchy, merged_content, code_blocks)
             # Optimize structure
             hierarchy = self._optimize_structure(hierarchy)
             root.children = hierarchy
@@ -175,6 +176,38 @@ class DocumentStructureAnalyzer:
                 node.page_start = page
                 
         return hierarchy
+    
+    def _assign_merged_content_to_sections(self, hierarchy: List[DocumentNode], 
+                                          merged_content: List[ContentBlock],
+                                          code_blocks: List[Any] = None):
+        """Assign merged content blocks to appropriate sections"""
+        all_nodes = self._flatten_hierarchy(hierarchy)
+        
+        # Sort nodes by page start
+        all_nodes.sort(key=lambda n: n.page_start or 0)
+        
+        # Assign merged content blocks
+        for block in merged_content:
+            # Skip heading text blocks as they define structure
+            if block.content_type == 'text' and hasattr(block.content, 'block_type'):
+                if block.content.block_type.startswith('heading'):
+                    continue
+                    
+            page_num = block.page_num
+            node = self._find_section_for_page(all_nodes, page_num)
+            if node:
+                node.content.append(block)
+            elif hierarchy:
+                # Add to first section if no matching page found
+                hierarchy[0].content.append(block) 
+                
+        # Add code blocks
+        if code_blocks:
+            for code in code_blocks:
+                page_num = getattr(code, 'page_num', 0)
+                node = self._find_section_for_page(all_nodes, page_num)
+                if node:
+                    node.content.append(code)
     
     def _assign_content_to_sections(self, hierarchy: List[DocumentNode], text_blocks: List[Any],
                                    images: List[Any] = None, tables: List[Any] = None,

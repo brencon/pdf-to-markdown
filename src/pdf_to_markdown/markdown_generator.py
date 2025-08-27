@@ -69,46 +69,75 @@ class MarkdownGenerator:
             
         # Process content blocks
         for block in node.content:
-            block_type = type(block).__name__
+            # Check if it's a ContentBlock wrapper
+            if hasattr(block, 'content_type'):
+                # Handle ContentBlock from merger
+                if block.content_type == 'text':
+                    text_content = block.content
+                    if hasattr(text_content, 'block_type'):
+                        if text_content.block_type in ['paragraph', 'text']:
+                            content.append(self._format_paragraph(text_content.content))
+                            content.append("")
+                        elif text_content.block_type == 'list':
+                            content.append(self._format_list(text_content.content))
+                            content.append("")
+                elif block.content_type == 'image' and image_paths:
+                    img_path = image_paths.get(id(block.content))
+                    if img_path:
+                        img_md = self._format_image(img_path, section_dir, block.content)
+                        content.append(img_md)
+                        content.append("")
+                elif block.content_type == 'table' and table_paths:
+                    paths = table_paths.get(id(block.content), {})
+                    if 'markdown' in paths:
+                        table_content = paths['markdown'].read_text(encoding='utf-8')
+                        content.append(table_content)
+                    else:
+                        table_md = self._format_table(block.content)
+                        content.append(table_md)
+                    content.append("")
+            else:
+                # Handle non-ContentBlock items (legacy support)
+                block_type = type(block).__name__
             
-            if hasattr(block, 'block_type'):
-                # Text block
-                if block.block_type in ['paragraph', 'text']:
-                    content.append(self._format_paragraph(block.content))
-                    content.append("")
-                elif block.block_type == 'list':
-                    content.append(self._format_list(block.content))
-                    content.append("")
-                elif block.block_type.startswith('heading'):
-                    level_num = int(block.block_type[-1]) if block.block_type[-1].isdigit() else 3
-                    content.append(self._format_heading(block.content, level_num))
-                    content.append("")
+                if hasattr(block, 'block_type'):
+                    # Text block
+                    if block.block_type in ['paragraph', 'text']:
+                        content.append(self._format_paragraph(block.content))
+                        content.append("")
+                    elif block.block_type == 'list':
+                        content.append(self._format_list(block.content))
+                        content.append("")
+                    elif block.block_type.startswith('heading'):
+                        level_num = int(block.block_type[-1]) if block.block_type[-1].isdigit() else 3
+                        content.append(self._format_heading(block.content, level_num))
+                        content.append("")
                     
-            elif block_type == 'ExtractedImage' and image_paths:
-                # Image
-                img_path = image_paths.get(id(block))
-                if img_path:
-                    img_md = self._format_image(img_path, section_dir, block)
-                    content.append(img_md)
-                    content.append("")
+                elif block_type == 'ExtractedImage' and image_paths:
+                    # Image
+                    img_path = image_paths.get(id(block))
+                    if img_path:
+                        img_md = self._format_image(img_path, section_dir, block)
+                        content.append(img_md)
+                        content.append("")
                     
-            elif block_type == 'ExtractedTable' and table_paths:
-                # Table
-                paths = table_paths.get(id(block), {})
-                if 'markdown' in paths:
-                    table_content = paths['markdown'].read_text(encoding='utf-8')
-                    content.append(table_content)
-                else:
-                    table_md = self._format_table(block)
-                    content.append(table_md)
-                content.append("")
+                elif block_type == 'ExtractedTable' and table_paths:
+                    # Table
+                    paths = table_paths.get(id(block), {})
+                    if 'markdown' in paths:
+                        table_content = paths['markdown'].read_text(encoding='utf-8')
+                        content.append(table_content)
+                    else:
+                        table_md = self._format_table(block)
+                        content.append(table_md)
+                    content.append("")
                 
-            elif block_type == 'CodeBlock' and code_paths:
-                # Code block
-                code_path = code_paths.get(id(block))
-                code_md = self._format_code_block(block, code_path, section_dir)
-                content.append(code_md)
-                content.append("")
+                elif block_type == 'CodeBlock' and code_paths:
+                    # Code block
+                    code_path = code_paths.get(id(block))
+                    code_md = self._format_code_block(block, code_path, section_dir)
+                    content.append(code_md)
+                    content.append("")
                 
         # Process child sections
         if node.children:
@@ -142,13 +171,30 @@ class MarkdownGenerator:
             content.append("## Document Content")
             content.append("")
             for block in root_node.content:
-                if hasattr(block, 'block_type'):
-                    if block.block_type in ['paragraph', 'text']:
-                        content.append(self._format_paragraph(block.content))
-                        content.append("")
-                    elif block.block_type == 'list':
-                        content.append(self._format_list(block.content))
-                        content.append("")
+                # Check if it's a ContentBlock wrapper
+                if hasattr(block, 'content_type'):
+                    if block.content_type == 'text':
+                        text_content = block.content
+                        if hasattr(text_content, 'block_type'):
+                            if text_content.block_type in ['paragraph', 'text']:
+                                content.append(self._format_paragraph(text_content.content))
+                                content.append("")
+                            elif text_content.block_type == 'list':
+                                content.append(self._format_list(text_content.content))
+                                content.append("")
+                    elif block.content_type == 'image':
+                        # For root level, we can't show images without paths
+                        # This would need to be handled in document generation
+                        pass
+                else:
+                    # Legacy support
+                    if hasattr(block, 'block_type'):
+                        if block.block_type in ['paragraph', 'text']:
+                            content.append(self._format_paragraph(block.content))
+                            content.append("")
+                        elif block.block_type == 'list':
+                            content.append(self._format_list(block.content))
+                            content.append("")
             content.append("")
         
         # Generate table of contents only if there are children
@@ -279,11 +325,36 @@ class MarkdownGenerator:
         # Get alt text
         alt_text = getattr(image_obj, 'alt_text', None) or getattr(image_obj, 'caption', None) or "Image"
         
-        # Format based on style
-        if self.image_format == 'embedded':
-            # Embed as base64 (not implemented for brevity)
-            return f"![{alt_text}]({rel_path_str})"
+        # Determine image size/type for alignment
+        width = getattr(image_obj, 'width', 0)
+        height = getattr(image_obj, 'height', 0)
+        img_type = getattr(image_obj, 'image_type', 'figure')
+        
+        # Use HTML for better control over image display
+        if self.config.get('use_html_images', False):
+            # Determine alignment based on image characteristics
+            if img_type in ['icon', 'logo'] or (width < 200 and height < 200):
+                # Small images - float left with text wrapping
+                return (
+                    f'<img src="{rel_path_str}" alt="{alt_text}" '
+                    f'style="float: left; margin: 0 15px 15px 0; max-width: 150px;" />'
+                )
+            elif width > height * 1.5:  # Wide images
+                # Full width center
+                return (
+                    f'<div align="center">\n'
+                    f'  <img src="{rel_path_str}" alt="{alt_text}" width="100%" style="max-width: 800px;" />\n'
+                    f'</div>'
+                )
+            else:
+                # Normal images - center aligned
+                return (
+                    f'<div align="center">\n'
+                    f'  <img src="{rel_path_str}" alt="{alt_text}" width="80%" style="max-width: 600px;" />\n'
+                    f'</div>'
+                )
         else:
+            # Standard markdown
             return f"![{alt_text}]({rel_path_str})"
     
     def _format_table(self, table_obj: Any) -> str:
