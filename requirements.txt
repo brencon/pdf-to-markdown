@@ -1,0 +1,45 @@
+# Core PDF processing
+pymupdf>=1.23.0
+pdfplumber>=0.10.0
+pypdf>=4.0.0
+
+# OCR capabilities
+pytesseract>=0.3.10
+pdf2image>=1.16.0
+pillow>=10.0.0
+
+# Natural Language Processing
+spacy>=3.7.0
+nltk>=3.8.0
+
+# Markdown generation
+markdown2>=2.4.0
+python-markdown>=3.5.0
+
+# Table extraction
+tabula-py>=2.8.0
+pandas>=2.1.0
+camelot-py>=0.11.0
+
+# Image processing
+opencv-python>=4.8.0
+
+# Utilities
+click>=8.1.0
+rich>=13.7.0
+pyyaml>=6.0.0
+python-slugify>=8.0.0
+tqdm>=4.66.0
+
+# Code detection
+pygments>=2.17.0
+
+# Testing
+pytest>=7.4.0
+pytest-cov>=4.1.0
+pytest-mock>=3.12.0
+
+# Type checking
+mypy>=1.8.0
+types-PyYAML
+types-tqdm
