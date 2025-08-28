@@ -202,19 +202,20 @@ class MarkdownGenerator:
             content.append("## Table of Contents")
             content.append("")
             
-            def generate_toc(node: Any, indent: int = 0):
+            def generate_toc(node: Any, indent: int = 0, parent_path: str = ""):
                 if hasattr(node, 'node_type') and node.node_type == 'root':
                     for child in node.children:
-                        generate_toc(child, indent)
+                        generate_toc(child, indent, parent_path)
                 else:
-                    # Create link
-                    link_path = f"{node.slug}/index.md"
+                    # Build full path from root
+                    current_path = f"{parent_path}/{node.slug}" if parent_path else node.slug
+                    link_path = f"{current_path}/index.md"
                     indent_str = "  " * indent
                     content.append(f"{indent_str}- [{node.title}]({link_path})")
                     
-                    # Add children
+                    # Add children with updated parent path
                     for child in node.children:
-                        generate_toc(child, indent + 1)
+                        generate_toc(child, indent + 1, current_path)
                         
             generate_toc(root_node)
             content.append("")
